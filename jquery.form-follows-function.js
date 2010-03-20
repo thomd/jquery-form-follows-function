@@ -1,9 +1,9 @@
 /*
- * Form Follows Function - a jQuery based form replacement
+ * Form Follows Function - a jQuery plugin for web-form replacement
  *
- * @author        Thomas Duerr me@thomd.net
- * @date          04.2009
- * @requirements  jquery v1.3.2
+ * @author     Thomas Duerr, me@thomd.net
+ * @date       04.2009
+ * @tested     jquery v1.3.2, jquery v1.4.2 
  *
  *
  * Usage:
@@ -20,7 +20,7 @@
  *
  *
  *
- * The fff-plugin expects a common selectbox with an optional (correctly linked) label and an optional tabindex. 
+ * The fff-plugin expects a common selectbox with an optional (correctly linked) label and an optional disabled- or tabindex-attribute. 
  * It respects the option-attributes selected and disabled.
  *
  *   Example:
@@ -28,7 +28,7 @@
  *     <form class="fff">
  *       ...
  *       <label for="selectbox_id">Select Color ...</label>
- *       <select id="selectbox_id" name="field_name" tabindex="3">
+ *       <select id="selectbox_id" name="field_name" disabled="disabled" tabindex="3">
  *         <option value="v1">option 1</option>
  *         <option value="v2">option 4</option>
  *         <option value="v3" selected="selected">option 3</option>
@@ -53,8 +53,6 @@
  *        </ul>
  *      </div>
  *
- *   When adjusting widths, horizontal-paddings of span and li should be the same!
- * 
  *
  */
 (function($){
@@ -97,30 +95,37 @@
                     return {
                         from: function(select_orig){
 
-							// set class-based options
-							var ajustWidths = select_orig.hasClass('fff-ajust-widths') ? true : settings.ajustWidths;
-							var insertLabel = select_orig.hasClass('fff-insert-label') ? true : settings.insertLabel;
-							var truncateSelection = select_orig.hasClass('fff-truncate-selection') ? true : settings.truncateSelection;
-							var removeEmptyOptions = select_orig.hasClass('fff-remove-empty-options') ? true : settings.removeEmptyOptions;
+                            // set class-based options
+                            var ajustWidths = select_orig.hasClass('fff-ajust-widths') ? true : settings.ajustWidths;
+                            var insertLabel = select_orig.hasClass('fff-insert-label') ? true : settings.insertLabel;
+                            var truncateSelection = select_orig.hasClass('fff-truncate-selection') ? true : settings.truncateSelection;
+                            var removeEmptyOptions = select_orig.hasClass('fff-remove-empty-options') ? true : settings.removeEmptyOptions;
 
-							// get attached events
-							var orig_events = function(){
-								return $.data(select_orig[0], "events") || {};
-							}
+                            // get all events attached on original selectbox 
+                            var orig_events = function(){
+                                return $.data(select_orig[0], "events") || {};
+                            }
 							
                             // start building html for replaced selectbox
                             var box = "<div class='select-replacement'>";
                             
-                            // add tabindex
+                            // add disabled attribute?
+                            var disabled = select_orig[0].disabled;
+                            var klass = 'selector';
+                            if(disabled){
+                                klass += ' disabled';
+                            }
+
+                            // add tabindex attribute?
                             var tabIndex = select_orig[0].tabIndex;
-                            if(tabIndex == 0){
-                                box += "<span class='selector'>";
+                            if(tabIndex == 0 || disabled){
+                                box += "<span class='" + klass + "'>";
                             } else {
-                                box += "<span class='selector' tabindex='" + tabIndex + "'>";
-								select_orig.removeAttr("tabindex");
+                                box += "<span class='" + klass + "' tabindex='" + tabIndex + "'>";
+                                select_orig.removeAttr("tabindex");
                             }
                             
-                            // set first (selected) option
+                            // set label as selector text otherwise set first option as selector texts
                             var label = $("label[for='"+select_orig.attr('id')+"']"); 
                             if(insertLabel && label.length > 0){
                                 box += label.hide().text();
@@ -131,7 +136,7 @@
                             
                             box += "</span><ul>";
                             
-                            // set other options
+                            // set options
                             $('option', select_orig).each(function(i){
                                 var option = $(this);
                                 if(removeEmptyOptions && (option.is(':empty') || option.attr('value') == '')) return;
@@ -141,102 +146,104 @@
                                 box += "<li class='" + klass + "' ref='" + i + "'>" + option.text() + "</li>";
                             });
                             box += "</ul></div>";
-                            var $box = $(box).css({'position': 'relative', 'display': 'inline', 'z-index': (settings.zIndexStart - i)});
+                            var $box = $(box).css({'position': 'relative', 'z-index': (settings.zIndexStart - i)});
 
-                            var $selector = $('span', $box);
-                            if(select_orig.attr('id')) {
-								$selector.addClass(select_orig.attr('id'));
-							}
-                            var $dropdown = $('ul', $box).css({'position': 'absolute', 'left': '0', 'z-index': (settings.zIndexStart + 1)});
-							var $options = $('li', $box);
+                            var $selector = $box.find('span');
+                            if(select_orig.attr('id')){
+                                $selector.addClass(select_orig.attr('id'));
+                            }
+                            var $dropdown = $box.find('ul').css({'position': 'absolute'});
+                            var $options = $box.find('li');
 
                             // update text within $selector if an select-option is pre-selected
                             if(select_orig[0].selectedIndex > 0){
-                                $selector.text($('option:selected', select_orig).text());
+                                $selector.text(select_orig.find('option:selected').text());
                             }
 
-
-							//
+                            //
                             // hide $drowpdown
-							//
+                            //
                             var hideDropdown = function(){
-                               	$dropdown.hide();
-                               	$selector.css('outline', '');
+                                $dropdown.hide();
+                                $selector.css('outline', '');
                             }
-
-
-							//
-                            // truncate selected option
-							//
-							var truncate = function(){
-	                            if(truncateSelection && !ajustWidths){
-
-	                              	var targetHeight = $box.children(':first').height();
-	                              	var targetWidth = $box.children(':first').width();
-	                              	var $clone = $box.children(':first').clone().appendTo($box).css({'height':'100%','white-space':'normal','visibility':'hidden'});
-
-									// check height
-	                              	var cloneHeight = $clone.height();
-	                              	if(cloneHeight > targetHeight){
-										$clone.text($clone.text() + '...');
-		                              	while(targetHeight < $clone.height()){
-											$clone.text($clone.text().replace(/.(\.\.\.)$/, '$1'));
-										}
-										$box.children(':first').html($clone.text());
-	                              	}
-
-									// check width
-									$clone.css({'display': 'inline'}).before('<br>');
-									var cloneWidth = $clone.width();
-									if(cloneWidth > targetWidth){
-										$clone.text($clone.text() + '...');
-		                              	while(targetWidth <= $clone.width()){
-											$clone.text($clone.text().replace(/.(\.\.\.)$/, '$1'));
-										}
-										$box.children(':first').html($clone.text());
-									}
-
-									$clone.prev('br').remove();
-									$clone.remove();
-	                            }                            
-							}
-
-                            // insert replaced selectbox after original selectbox
-                            $box.insertAfter(select_orig);
-							truncate();
 
 
                             //
-							// adjust widths: set width of $selector to the same width of $dropdown 
-							//
-                            if(ajustWidths){
-								
-								// for a correct calculation of $options.width(), the overflow of $dropdown needs to be set to hidden temporarily in order to remove the scrollbar.
-								$dropdown.css('overflow', 'hidden');
-								var optionsWidth = $options.width();
-								$dropdown.css('overflow', 'auto');
+                            // truncate selected option
+                            //
+                            var truncate = function(){
+                                if(truncateSelection && !ajustWidths){
+                                    var targetHeight = $selector.height();
+                                    var targetWidth = $selector.width();
+                                    var $clone = $selector.clone().appendTo($box).css({'height': '100%', 'white-space': 'normal', 'visibility': 'hidden'});
 
-								$selector.width(optionsWidth);
-                                if($selector.outerWidth() < $dropdown.outerWidth()){
-									$selector.width($selector.width() + ($dropdown.outerWidth() - $selector.outerWidth()));
-                                } else {
-									$dropdown.width($dropdown.width() + ($selector.outerWidth() - $dropdown.outerWidth()));
-								}
+                                    // check height
+                                    if($clone.height() > targetHeight){
+                                        $clone.text($clone.text() + '...');
+		                              	while(targetHeight <= $clone.height()){
+                                            $clone.text($clone.text().replace(/.(\.\.\.)$/, '$1'));
+                                        }
+                                        $selector.html($clone.text());
+                                    }
+
+                                    // check width (in case a word is longer than $selector-width)
+                                    $clone.css({'display': 'inline'}).before('<br>');
+                                    var cloneWidth = $clone.width();
+                                    if(cloneWidth > targetWidth){
+                                        $clone.text($clone.text() + '...');
+                                        while(targetWidth <= $clone.width()){
+                                            $clone.text($clone.text().replace(/.(\.\.\.)$/, '$1'));
+                                        }
+                                        $selector.html($clone.text());
+                                    }
+
+                                    // clean up ...
+                                    $clone.prev('br').remove();
+                                    $clone.remove();
+                                }                            
                             }
 
-							// width of $dropdown should never be smaller than the width of $selector
-							if($dropdown.outerWidth() < $selector.outerWidth()){
-								$dropdown.width($selector.outerWidth() - ($dropdown.outerWidth() - $dropdown.width()));
-							}
+                            // insert replaced selectbox after original selectbox
+                            $box.insertAfter(select_orig);
+                            truncate();
 
 
-							// initially hide $dropdown
-							hideDropdown();
+                            //
+                            // adjust widths: set width of $selector to the same width of $dropdown 
+                            //
+                            if(ajustWidths){
+								
+                                // for a correct calculation of $options.width(), the overflow of $dropdown needs to be set to hidden temporarily in order to remove the scrollbar.
+                                $dropdown.css('overflow', 'hidden');
+                                var optionsWidth = $options.width();
+                                $dropdown.css('overflow', 'auto');
+
+                                $selector.width(optionsWidth);
+                                if($selector.outerWidth() < $dropdown.outerWidth()){
+                                    $selector.width($selector.width() + ($dropdown.outerWidth() - $selector.outerWidth()));
+                                } else {
+                                    $dropdown.width($dropdown.width() + ($selector.outerWidth() - $dropdown.outerWidth()));
+                                }
+                            }
+
+                            // width of $dropdown should never be smaller than the width of $selector
+                            if($dropdown.outerWidth() < $selector.outerWidth()){
+                                $dropdown.width($selector.outerWidth() - ($dropdown.outerWidth() - $dropdown.width()));
+                            }
 
 
-							//
+                            // initially hide $dropdown
+                            hideDropdown();
+
+
+                            // do not attach event when selectox is disabled
+                            if(disabled){return $box};
+
+
+                            //
                             // delegate click events
-							//
+                            //
                             $box.click($.delegate({
                                 '.selector': function(ev){
                                     ev.stopPropagation();
@@ -255,13 +262,13 @@
                                 },
                                 '.option': function(ev){
                                     ev.stopPropagation();
+                                    settings.onSelectOption();
                                     var option = $(ev.target);
                                     if(option.hasClass('disabled')) return;
                                     $options.removeClass('selected');
                                     option.addClass('selected'); 
-                                    settings.onSelectOption();
                                     $selector.text(option.text());
-									truncate();
+                                    truncate();
                                     select_orig[0].selectedIndex = option.attr('ref');
                                     $dropdown.hide();
                                     $(document.body).unbind('click', hideDropdown);
@@ -270,9 +277,9 @@
                                 }
                             }));
 
-							//
+                            //
                             // delegate mouseover and mouseout events
-							//
+                            //
                             $box.mouseover($.delegate({
                                 '.selector': function(ev){
                                     if(orig_events().mouseover){select_orig.mouseover();}
@@ -284,71 +291,71 @@
                                 }
                             }));
                             $box.mouseout($.delegate({
-                            	'.selector,.option': function(ev){
-                            		if(orig_events().mouseout){select_orig.mouseout();}
-                            	}
+                                '.selector,.option': function(ev){
+                                    if(orig_events().mouseout){select_orig.mouseout();}
+                                }
                             }));
 
                             //
-							// focus and blur events
-							//
+                            // focus and blur events
+                            //
                             $selector.focus(function(ev){
-                            	if(orig_events().focus){select_orig.focus();}
+                                if(orig_events().focus){select_orig.focus();}
                             });
                             $selector.blur(function(ev){
-                            	if(orig_events().blur){select_orig.blur();}
+                                if(orig_events().blur){select_orig.blur();}
                             });
 
                             //
-							// delegate key events
-							//
-							if(settings.keyAccess){
-	                            $box.keydown($.delegate({
-	                                '.selector': function(ev){
-										var key = ev.keyCode;
+                            // delegate key events
+                            //
+                            if(settings.keyAccess){
+                                $box.keydown($.delegate({
+                                    '.selector': function(ev){
+                                        var key = ev.keyCode;
 
-										// tab || esc
-										if(key == '9' || key == '27'){
-											hideDropdown();
-										}
+                                        // tab || esc
+                                        if(key == '9' || key == '27'){
+                                            hideDropdown();
+                                        }
 
-										if((key >= '37' && key <= '40') || (key >= '48' && key <= '57') || (key >= '65' && key <= '90')){
-											var options  = select_orig[0].options;
+                                        if((key >= '37' && key <= '40') || (key >= '48' && key <= '57') || (key >= '65' && key <= '90')){
+                                            var options  = select_orig[0].options;
 
-											// up or left
-											if(key == '37' || key == '38'){
-												do {
-													select_orig[0].selectedIndex = (select_orig[0].selectedIndex == 0) ? options.length - 1 : select_orig[0].selectedIndex - 1;
-												} while(select_orig[0].options[select_orig[0].selectedIndex].disabled)
-											}
+                                            // up or left
+                                            if(key == '37' || key == '38'){
+                                                do {
+                                                    select_orig[0].selectedIndex = (select_orig[0].selectedIndex == 0) ? options.length - 1 : select_orig[0].selectedIndex - 1;
+                                                } while(select_orig[0].options[select_orig[0].selectedIndex].disabled)
+                                            }
 
-											// down or right
-											if(key == '39' || key == '40'){
-												do {
-													select_orig[0].selectedIndex = (select_orig[0].selectedIndex < options.length - 1) ? select_orig[0].selectedIndex + 1 : 0;
-												} while(select_orig[0].options[select_orig[0].selectedIndex].disabled)
-											}
+                                            // down or right
+                                            if(key == '39' || key == '40'){
+                                                do {
+                                                    select_orig[0].selectedIndex = (select_orig[0].selectedIndex < options.length - 1) ? select_orig[0].selectedIndex + 1 : 0;
+                                                } while(select_orig[0].options[select_orig[0].selectedIndex].disabled)
+                                            }
 
-											// letters || numbers
-											if((key >= '65' && key <= '90') || (key >= '48' && key <= '57')){
-												var letter = "0123456789-------abcdefghijklmnopqrstuvwxyz".substr(key-48,1);
-												for(var i = 0; i < options.length; i++) {
-													if(options[i].text.substr(0,1).toLowerCase() == letter && !options[i].disabled){
-														select_orig[0].selectedIndex = i;
-														break;
-													} 
-												}
-											}
+                                            // letters || numbers
+                                            if((key >= '65' && key <= '90') || (key >= '48' && key <= '57')){
+                                                var letter = "0123456789-------abcdefghijklmnopqrstuvwxyz".substr(key-48,1);
+                                                for(var i = 0; i < options.length; i++) {
+                                                    if(options[i].text.substr(0,1).toLowerCase() == letter && !options[i].disabled){
+                                                        select_orig[0].selectedIndex = i;
+                                                        break;
+                                                    } 
+                                                }
+                                            }
 											
-		                                    $options.removeClass('selected');
-											$('li[ref='+select_orig[0].selectedIndex+']', $dropdown).addClass('selected'); 
-		                                    settings.onSelectOption();
-		                                    $selector.text(options[select_orig[0].selectedIndex].text);
-											truncate();
-										}
-	                                }
-	                            }));
-							}
+                                            $options.removeClass('selected');
+                                            $dropdown.find('li[ref='+select_orig[0].selectedIndex+']').addClass('selected'); 
+                                            settings.onSelectOption();
+                                            $selector.text(options[select_orig[0].selectedIndex].text);
+                                            truncate();
+                                        }
+                                    }
+                                }));
+                            }
 
                             return $box;
                         }
@@ -356,6 +363,8 @@
                 }
             };
 
+            
+            
             return this.each(function(){
 
                 //
@@ -389,5 +398,5 @@
 // You may use other self defined keywords for a specific implementation. 
 //
 $(function(){
-	$('.fff').fff();
+    $('.fff').fff();
 })        

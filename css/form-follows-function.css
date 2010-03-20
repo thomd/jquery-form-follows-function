@@ -1,6 +1,6 @@
-
 .fff .select-replacement {
-  position: relative;
+/*  display: block;   OPERA */
+  display: inline-block;
 }
 
 .fff .select-replacement span {
@@ -14,14 +14,25 @@
   display: inline-block;
   text-align: left;
   white-space: nowrap;
-  line-height: 1.3;
 }
 
-.fff .select-replacement span.password_question {
-  width: 150px;
+.fff .select-replacement .password_question {
+  width: 160px;
 }
 
-.fff .select-replacement span:hover {
+.fff .select-replacement span.disabled {
+  color: #999;
+  cursor: default;
+  outline: none;
+}
+
+.fff .select-replacement span.disabled:hover,
+.fff .select-replacement span.disabled:focus {
+  background-position: right -18px;
+}
+
+.fff .select-replacement span:hover,
+.fff .select-replacement span:focus {
   background-position: right 0px;
 }
 
@@ -35,7 +46,7 @@
   overflow-x: hidden;
   max-height: 220px;
   position: absolute;
-  top: 16px;
+  top: 21px;
   left: 0;
 }
 
@@ -70,3 +81,4 @@
   background: #FFF;
   cursor: default;
 }
+
