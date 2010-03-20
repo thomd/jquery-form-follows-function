@@ -3,8 +3,7 @@ Form Follows Function - a jQuery Plugin
 
 > Form follows function - that has been misunderstood. Form and function should be one, joined in a spiritual union.
 >
-> Frank Lloyd Wright, 1908  
-> US architect (1869 - 1959)
+> Frank Lloyd Wright, 1908 - US architect (1869 - 1959)
 
 
 What is it about?
@@ -22,20 +21,19 @@ Features
 
 ### Selectbox Features
 
-* respects tabindex, selected and disabled attributes.
-* truncation of selected text for selectboxes wirh a fixed width.
-* controll plugin-options via special class-attribute keywords also.
-* style selectbox via css.
-* include label within selectbox.
-* access selectbox via keys.
-* enhance selectbox-functionality with callbacks.
-* replaced selectbox uses attached events from original selectbox.
+* Respects tabindex, selected and disabled attributes.
+* Truncation of selected text for selectboxes with a fixed width.
+* Options may also be defined individually via class-attribute keywords.
+* Selectboxes are styled via CSS only to give you the most freedom.
+* Optionally include label within selectbox as a hint.
+* Access selectbox and options via keys.
+* Replaced selectbox clones attached events from original selectbox.
 
 
 Usage
 -----
 
-Example of implementation:
+Example of implementation (will replace all selectboxes within a form):
 
     <script type="text/javascript" src="jquery.form-follows-function.js"></script>
     
